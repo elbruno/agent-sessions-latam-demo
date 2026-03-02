@@ -1,0 +1,136 @@
+@page "/tacos"
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.SignalR.Client
+@using BalizasV16.Models
+@using BalizasV16.Services
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+@inject TacoService TacoService
+@implements IAsyncDisposable
+
+<PageTitle>🌮 Tacos Nocturnos - México</PageTitle>
+
+<div class="taco-header">
+    <h1>🌮 Tacos Nocturnos de México</h1>
+    <p class="subtitle">Puestos de tacos abiertos después de las 11 PM</p>
+</div>
+
+<div class="taco-controls">
+    <div class="filter-group">
+        <label>🏙️ Ciudad:</label>
+        <select @onchange="OnCityChanged">
+            @foreach (var city in BalizasV16.Services.TacoService.GetCities())
+            {
+                <option value="@city">@(city == "all" ? "Todas las ciudades" : city)</option>
+            }
+        </select>
+    </div>
+
+    <div class="filter-group">
+        <label>🌮 Tipo de taco:</label>
+        <select @onchange="OnTacoTypeChanged">
+            @foreach (var type in BalizasV16.Services.TacoService.GetTacoTypes())
+            {
+                <option value="@type">@(type == "all" ? "Todos los tipos" : char.ToUpper(type[0]) + type[1..])</option>
+            }
+        </select>
+    </div>
+
+    <div class="filter-group">
+        <label>
+            <input type="checkbox" @bind="_lateNightOnly" @bind:after="ApplyFilters" />
+            🌙 Solo abiertos después de las 11 PM
+        </label>
+    </div>
+
+    <div class="stats">
+        <span class="badge-taco">@_displayedStands.Count puestos</span>
+        <span class="badge-late">@_displayedStands.Count(s => s.IsOpenLateNight) nocturnos 🌙</span>
+        <span class="badge-taco" style="background:#4caf50">@_providers.Count proveedores</span>
+        @if (_loading)
+        {
+            <span class="loading">⏳ Cargando...</span>
+        }
+    </div>
+</div>
+
+<div id="tacoMap" style="height:calc(100vh - 220px);width:100%;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.15);"></div>
+
+@code {
+    private List<TacoStand> _allStands = new();
+    private List<TacoStand> _displayedStands = new();
+    private List<string> _providers = new();
+    private string _selectedCity = "all";
+    private string _selectedTacoType = "all";
+    private bool _lateNightOnly = false;
+    private bool _loading = true;
+    private HubConnection? _hubConnection;
+
+    protected override void OnInitialized()
+    {
+        _providers = TacoService.GetActiveProviders();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JS.InvokeVoidAsync("tacoMap.init");
+
+            _hubConnection = new HubConnectionBuilder()
+                .WithUrl(Navigation.ToAbsoluteUri("/tacohub"))
+                .WithAutomaticReconnect()
+                .Build();
+
+            _hubConnection.On<List<TacoStand>>("TacoStandsUpdated", async (stands) =>
+            {
+                _allStands = stands;
+                ApplyLocalFilters();
+                await JS.InvokeVoidAsync("tacoMap.updateMarkers", _displayedStands);
+                _loading = false;
+                await InvokeAsync(StateHasChanged);
+            });
+
+            await _hubConnection.StartAsync();
+            await _hubConnection.InvokeAsync("GetTacoStands", _selectedCity, _selectedTacoType);
+        }
+    }
+
+    private async Task OnCityChanged(ChangeEventArgs e)
+    {
+        _selectedCity = e.Value?.ToString() ?? "all";
+        _loading = true;
+        await ApplyFilters();
+    }
+
+    private async Task OnTacoTypeChanged(ChangeEventArgs e)
+    {
+        _selectedTacoType = e.Value?.ToString() ?? "all";
+        _loading = true;
+        await ApplyFilters();
+    }
+
+    private async Task ApplyFilters()
+    {
+        if (_hubConnection is not null)
+        {
+            await _hubConnection.InvokeAsync("GetTacoStands", _selectedCity, _selectedTacoType);
+        }
+    }
+
+    private void ApplyLocalFilters()
+    {
+        _displayedStands = _allStands;
+        if (_lateNightOnly)
+        {
+            _displayedStands = _displayedStands.Where(s => s.IsOpenLateNight).ToList();
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_hubConnection is not null)
+            await _hubConnection.DisposeAsync();
+        try { await JS.InvokeVoidAsync("tacoMap.dispose"); } catch { }
+    }
+}

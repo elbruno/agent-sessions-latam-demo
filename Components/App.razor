@@ -1,0 +1,111 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <base href="/" />
+    <ResourcePreloader />
+    <link rel="stylesheet" href="@Assets["lib/bootstrap/dist/css/bootstrap.min.css"]" />
+    <link rel="stylesheet" href="@Assets["app.css"]" />
+    <link rel="stylesheet" href="@Assets["BalizasV16.styles.css"]" />
+    <ImportMap />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="icon" type="image/png" href="favicon.png" />
+    <HeadOutlet />
+    <style>
+        .baliza-header { display:flex; justify-content:space-between; align-items:center; padding:12px 20px; background:#1a1a2e; color:white; }
+        .baliza-header h1 { font-size:1.3rem; margin:0; }
+        .baliza-stats { display:flex; gap:12px; align-items:center; }
+        .badge { background:#ff6600; padding:4px 12px; border-radius:12px; font-size:0.85rem; font-weight:bold; }
+        .status { font-size:0.85rem; }
+        .status.connected { color:#4caf50; }
+        .status.disconnected { color:#f44336; }
+        .beacon-icon div { animation: pulse 1.5s infinite; }
+        @@keyframes pulse { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:0.7; transform:scale(1.2); } }
+        .taco-header { text-align:center; padding:12px 20px; background:linear-gradient(135deg, #2d1b00, #5c3a1e); color:white; }
+        .taco-header h1 { font-size:1.5rem; margin:0; }
+        .taco-header .subtitle { font-size:0.9rem; color:#ffcc80; margin:4px 0 0 0; }
+        .taco-controls { display:flex; flex-wrap:wrap; gap:12px; padding:10px 20px; background:#3e2723; color:white; align-items:center; }
+        .filter-group { display:flex; align-items:center; gap:6px; }
+        .filter-group select { padding:4px 8px; border-radius:6px; border:none; background:#5d4037; color:white; }
+        .badge-taco { background:#ff6f00; padding:4px 12px; border-radius:12px; font-size:0.85rem; font-weight:bold; }
+        .badge-late { background:#e65100; padding:4px 12px; border-radius:12px; font-size:0.85rem; }
+        .loading { color:#ffcc80; }
+        .taco-marker { font-size:24px; text-align:center; line-height:36px; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.4)); }
+        .taco-marker.late-night { animation: glow 2s infinite; }
+        @@keyframes glow { 0%,100% { filter:drop-shadow(0 0 4px rgba(255,111,0,0.6)); } 50% { filter:drop-shadow(0 0 12px rgba(255,111,0,1)); } }
+        /* Earthquake styles */
+        .eq-layout { display:flex; height:calc(100vh - 60px); }
+        .eq-main { flex:1; display:flex; flex-direction:column; }
+        .eq-panel { width:320px; background:#1a1a2e; color:white; overflow-y:auto; padding:12px; border-left:1px solid #333; }
+        .eq-header { display:flex; justify-content:space-between; align-items:center; padding:10px 20px; background:#1a0000; color:white; }
+        .eq-header h1 { font-size:1.3rem; margin:0; }
+        .eq-subtitle { color:#ff6666; font-size:0.85rem; }
+        .eq-controls { display:flex; flex-wrap:wrap; gap:10px; padding:8px 20px; background:#2a0a0a; color:white; align-items:center; }
+        .eq-filter { display:flex; align-items:center; gap:5px; font-size:0.85rem; }
+        .eq-filter select { padding:3px 6px; border-radius:4px; border:none; background:#4a1a1a; color:white; }
+        .eq-badge { background:#cc0000; padding:3px 10px; border-radius:10px; font-size:0.8rem; font-weight:bold; color:white; }
+        .eq-badge-alert { background:#ff0000; animation:pulse 1.5s infinite; }
+        .eq-loading { font-size:1.2rem; }
+        .eq-legend { display:flex; gap:12px; padding:4px 20px; background:#1a0a0a; color:#ccc; font-size:0.75rem; align-items:center; }
+        .eq-dot { display:inline-block; border-radius:50%; vertical-align:middle; margin-right:3px; }
+        .eq-detail-card { background:#2a2a4e; padding:12px; border-radius:8px; margin-bottom:12px; }
+        .eq-detail-card h4 { margin:0 0 8px 0; font-size:1.5rem; }
+        .eq-detail-card p { margin:4px 0; font-size:0.85rem; }
+        .eq-tsunami { color:#ff0000!important; font-weight:bold; }
+        .eq-link { color:#6699ff; font-size:0.85rem; }
+        .eq-list { display:flex; flex-direction:column; gap:4px; }
+        .eq-list-item { display:flex; gap:8px; align-items:center; padding:6px 8px; border-radius:4px; cursor:pointer; transition:background 0.2s; }
+        .eq-list-item:hover, .eq-list-item.selected { background:#2a2a4e; }
+        .eq-list-mag { font-size:1.1rem; font-weight:bold; min-width:36px; text-align:center; }
+        .eq-list-info { display:flex; flex-direction:column; font-size:0.75rem; overflow:hidden; }
+        .eq-list-place { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .eq-list-time { color:#888; }
+        .eq-marker { transition:transform 0.3s; }
+        @@keyframes eqPulse { 0%,100% { transform:scale(1); opacity:0.85; } 50% { transform:scale(1.3); opacity:1; } }
+        /* Volcano styles */
+        .volcano-layout { display:flex; height:calc(100vh - 60px); }
+        .volcano-main { flex:1; display:flex; flex-direction:column; overflow-y:auto; }
+        .volcano-panel { width:300px; background:#1a0a0a; color:white; overflow-y:auto; padding:12px; border-left:1px solid #333; }
+        .volcano-header { display:flex; justify-content:space-between; align-items:center; padding:10px 20px; background:linear-gradient(135deg,#1a0000,#3a1a00); color:white; }
+        .volcano-header h1 { font-size:1.3rem; margin:0; }
+        .volcano-sub { font-size:0.8rem; color:#ff9966; }
+        .semaforo { padding:8px 16px; border-radius:8px; text-align:center; min-width:140px; }
+        .semaforo-label { display:block; font-size:0.7rem; font-weight:bold; color:rgba(0,0,0,0.6); }
+        .semaforo-level { display:block; font-size:1rem; font-weight:bold; color:rgba(0,0,0,0.9); }
+        .volcano-metrics { display:flex; flex-wrap:wrap; gap:8px; padding:10px 20px; background:#2a0a00; }
+        .metric-card { flex:1; min-width:120px; background:#3a1a0a; border-radius:8px; padding:10px; text-align:center; }
+        .metric-icon { font-size:1.5rem; display:block; }
+        .metric-value { font-size:1.3rem; font-weight:bold; color:#ff9966; display:block; }
+        .metric-label { font-size:0.7rem; color:#999; display:block; }
+        .volcano-visuals { display:flex; gap:12px; padding:12px 20px; flex-wrap:wrap; }
+        .volcano-map-container, .volcano-cam-container { flex:1; min-width:300px; }
+        .volcano-visuals h3 { color:#ff9966; font-size:0.95rem; margin:0 0 8px 0; }
+        .volcano-quake-item { display:flex; gap:6px; align-items:center; padding:4px 6px; margin-bottom:3px; border-radius:4px; cursor:default; }
+        .volcano-quake-item:hover { background:#2a1a1a; }
+        .vq-mag { font-weight:bold; min-width:30px; text-align:center; font-size:0.9rem; }
+        .vq-info { display:flex; flex-direction:column; font-size:0.7rem; overflow:hidden; }
+        .vq-place { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:#ccc; }
+        .vq-time { color:#666; }
+        .volcano-links { margin-top:16px; }
+        .volcano-links h4 { color:#ff9966; font-size:0.85rem; }
+        .volcano-links a { display:block; color:#6699ff; font-size:0.8rem; margin:4px 0; text-decoration:none; }
+        .volcano-links a:hover { text-decoration:underline; }
+        .volcano-icon { font-size:36px; text-shadow:0 0 20px rgba(255,60,0,0.8); animation:volcanoGlow 3s infinite; }
+        @@keyframes volcanoGlow { 0%,100% { text-shadow:0 0 10px rgba(255,60,0,0.5); } 50% { text-shadow:0 0 30px rgba(255,60,0,1); } }
+    </style>
+</head>
+
+<body>
+    <Routes />
+    <ReconnectModal />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="js/balizaMap.js"></script>
+    <script src="js/tacoMap.js"></script>
+    <script src="js/earthquakeMap.js"></script>
+    <script src="js/volcanoMap.js"></script>
+    <script src="@Assets["_framework/blazor.web.js"]"></script>
+</body>
+
+</html>

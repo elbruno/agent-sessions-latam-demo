@@ -1,0 +1,62 @@
+@page "/map"
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.SignalR.Client
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+
+<PageTitle>Balizas V16 - Mapa en Tiempo Real</PageTitle>
+
+<div class="baliza-header">
+    <h1>⚠️ Balizas V16 en Tiempo Real</h1>
+    <div class="baliza-stats">
+        <span class="badge">@_balizas.Count balizas activas</span>
+        <span class="status @(_connected ? "connected" : "disconnected")">
+            @(_connected ? "● Conectado" : "○ Desconectado")
+        </span>
+    </div>
+</div>
+
+<div id="balizaMap" style="height:calc(100vh - 120px);width:100%;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.15);"></div>
+
+@code {
+    private HubConnection? _hubConnection;
+    private List<BalizasV16.Models.Baliza> _balizas = new();
+    private bool _connected;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JS.InvokeVoidAsync("balizaMap.init");
+
+            _hubConnection = new HubConnectionBuilder()
+                .WithUrl(Navigation.ToAbsoluteUri("/balizahub"))
+                .WithAutomaticReconnect()
+                .Build();
+
+            _hubConnection.On<List<BalizasV16.Models.Baliza>>("BalizasUpdated", async (balizas) =>
+            {
+                _balizas = balizas;
+                await JS.InvokeVoidAsync("balizaMap.updateMarkers", balizas);
+                await InvokeAsync(StateHasChanged);
+            });
+
+            await _hubConnection.StartAsync();
+            _connected = true;
+            StateHasChanged();
+
+            // Request current data
+            await _hubConnection.InvokeAsync("RequestBalizas");
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_hubConnection is not null)
+        {
+            await _hubConnection.DisposeAsync();
+        }
+        try { await JS.InvokeVoidAsync("balizaMap.dispose"); } catch { }
+    }
+}

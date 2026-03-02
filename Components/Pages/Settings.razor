@@ -1,0 +1,189 @@
+@page "/settings"
+@rendermode InteractiveServer
+@using BalizasV16.Models
+@using Microsoft.Extensions.Options
+@inject IOptionsMonitor<ApiSettings> ApiSettingsMonitor
+
+<PageTitle>⚙️ Configuración de APIs</PageTitle>
+
+<div class="container mt-4">
+    <h1>⚙️ Configuración de API Keys</h1>
+    <p class="text-muted">Configura las API keys para obtener más datos de puestos de tacos. Overpass/OSM siempre está activo (no requiere API key).</p>
+
+    <div class="alert alert-info">
+        <strong>💡 Nota:</strong> Las API keys se configuran en el archivo <code>appsettings.json</code> del proyecto.
+        Reinicia la aplicación después de modificar el archivo.
+    </div>
+
+    <div class="row g-4 mt-2">
+        <!-- Overpass/OSM -->
+        <div class="col-md-6">
+            <div class="card border-success">
+                <div class="card-header bg-success text-white">
+                    🗺️ OpenStreetMap / Overpass API
+                    <span class="badge bg-light text-success float-end">✅ Siempre activo</span>
+                </div>
+                <div class="card-body">
+                    <p><strong>Estado:</strong> <span class="text-success">● Activo</span></p>
+                    <p><strong>Costo:</strong> 100% gratuito</p>
+                    <p><strong>API Key:</strong> No necesita</p>
+                    <p><strong>Límite:</strong> ~10,000 peticiones/día</p>
+                    <p class="text-muted small">Datos abiertos y colaborativos. Cobertura variable.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Yelp -->
+        <div class="col-md-6">
+            <div class="card @(CurrentSettings.HasYelp ? "border-success" : "border-warning")">
+                <div class="card-header @(CurrentSettings.HasYelp ? "bg-success" : "bg-warning") text-white">
+                    🍽️ Yelp Fusion API
+                    <span class="badge bg-light @(CurrentSettings.HasYelp ? "text-success" : "text-warning") float-end">
+                        @(CurrentSettings.HasYelp ? "✅ Configurado" : "⚠️ No configurado")
+                    </span>
+                </div>
+                <div class="card-body">
+                    <p><strong>Estado:</strong>
+                        @if (CurrentSettings.HasYelp)
+                        {
+                            <span class="text-success">● Activo</span>
+                        }
+                        else
+                        {
+                            <span class="text-warning">○ Inactivo — Necesita API Key</span>
+                        }
+                    </p>
+                    <p><strong>Costo:</strong> Gratuito (5,000 peticiones/día)</p>
+                    <p><strong>Límite:</strong> 5,000/día — muy generoso</p>
+                    <p><strong>Ventajas:</strong> Ratings, reviews, fotos, buena cobertura MX</p>
+
+                    <hr/>
+                    <h6>📝 Cómo obtener tu API Key:</h6>
+                    <ol class="small">
+                        <li>Ve a <a href="https://www.yelp.com/developers" target="_blank">Yelp Developers</a></li>
+                        <li>Crea una cuenta Yelp (gratis)</li>
+                        <li>Ve a <a href="https://www.yelp.com/developers/v3/manage_app" target="_blank">Manage API Access</a></li>
+                        <li>Crea una App: nombre "Tacos Nocturnos"</li>
+                        <li>Copia tu API Key</li>
+                        <li>Pégala en <code>appsettings.json</code> → <code>ApiKeys:Yelp</code></li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+
+        <!-- Google Places -->
+        <div class="col-md-6">
+            <div class="card @(CurrentSettings.HasGooglePlaces ? "border-success" : "border-warning")">
+                <div class="card-header @(CurrentSettings.HasGooglePlaces ? "bg-success" : "bg-warning") text-white">
+                    🔍 Google Places API
+                    <span class="badge bg-light @(CurrentSettings.HasGooglePlaces ? "text-success" : "text-warning") float-end">
+                        @(CurrentSettings.HasGooglePlaces ? "✅ Configurado" : "⚠️ No configurado")
+                    </span>
+                </div>
+                <div class="card-body">
+                    <p><strong>Estado:</strong>
+                        @if (CurrentSettings.HasGooglePlaces)
+                        {
+                            <span class="text-success">● Activo</span>
+                        }
+                        else
+                        {
+                            <span class="text-warning">○ Inactivo — Necesita API Key</span>
+                        }
+                    </p>
+                    <p><strong>Costo:</strong> 5,000 peticiones gratis/mes, luego ~$32/1,000</p>
+                    <p><strong>Ventajas:</strong> Mejores horarios, "open now", fotos, ratings</p>
+
+                    <hr/>
+                    <h6>📝 Cómo obtener tu API Key:</h6>
+                    <ol class="small">
+                        <li>Ve a <a href="https://console.cloud.google.com/" target="_blank">Google Cloud Console</a></li>
+                        <li>Crea un proyecto nuevo</li>
+                        <li>Habilita "Places API (New)" en APIs & Services → Library</li>
+                        <li>Ve a APIs & Services → Credentials</li>
+                        <li>Crea credenciales → API Key</li>
+                        <li>Configura facturación (Google da $200 USD crédito gratis 90 días)</li>
+                        <li>Pega la key en <code>appsettings.json</code> → <code>ApiKeys:GooglePlaces</code></li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+
+        <!-- Foursquare -->
+        <div class="col-md-6">
+            <div class="card @(CurrentSettings.HasFoursquare ? "border-success" : "border-warning")">
+                <div class="card-header @(CurrentSettings.HasFoursquare ? "bg-success" : "bg-warning") text-white">
+                    📍 Foursquare Places API
+                    <span class="badge bg-light @(CurrentSettings.HasFoursquare ? "text-success" : "text-warning") float-end">
+                        @(CurrentSettings.HasFoursquare ? "✅ Configurado" : "⚠️ No configurado")
+                    </span>
+                </div>
+                <div class="card-body">
+                    <p><strong>Estado:</strong>
+                        @if (CurrentSettings.HasFoursquare)
+                        {
+                            <span class="text-success">● Activo</span>
+                        }
+                        else
+                        {
+                            <span class="text-warning">○ Inactivo — Necesita API Key</span>
+                        }
+                    </p>
+                    <p><strong>Costo:</strong> 10,000 peticiones gratis/mes (Pro), horarios son Premium</p>
+                    <p><strong>Ventajas:</strong> Categoría específica "Taco Place", buena taxonomía</p>
+
+                    <hr/>
+                    <h6>📝 Cómo obtener tu API Key:</h6>
+                    <ol class="small">
+                        <li>Ve a <a href="https://foursquare.com/developers/" target="_blank">Foursquare Developer Portal</a></li>
+                        <li>Crea una cuenta (gratis)</li>
+                        <li>Crea un proyecto en el Developer Console</li>
+                        <li>Genera una API Key en tu proyecto</li>
+                        <li>Pégala en <code>appsettings.json</code> → <code>ApiKeys:Foursquare</code></li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Configuration File Example -->
+    <div class="card mt-4 mb-4">
+        <div class="card-header bg-dark text-white">
+            📄 Ejemplo de <code>appsettings.json</code>
+        </div>
+        <div class="card-body">
+            <pre class="bg-light p-3 rounded"><code>{
+  "ApiKeys": {
+    "GooglePlaces": "AIza...........................",
+    "Yelp": "Bearer xxxxxxxxxxxxxxxxxxxxxxx",
+    "Foursquare": "fsq3...........................",
+    "TomTom": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+  }
+}</code></pre>
+            <p class="text-muted small mt-2">
+                <strong>⚠️ Seguridad:</strong> En producción, usa <strong>Azure Key Vault</strong> o
+                <strong>User Secrets</strong> (<code>dotnet user-secrets</code>) en lugar de guardar las keys en appsettings.json.
+            </p>
+        </div>
+    </div>
+
+    <!-- API Documentation Links -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            📚 Documentación Completa
+        </div>
+        <div class="card-body">
+            <p>Consulta los documentos detallados en la carpeta <code>docs/</code> del proyecto:</p>
+            <ul>
+                <li><strong>docs/APIs-Tacos.md</strong> — Guía completa de todas las APIs de tacos</li>
+                <li><strong>docs/APIs-Balizas.md</strong> — Documentación de la API de balizas V16</li>
+                <li><strong>docs/Arquitectura.md</strong> — Arquitectura de la aplicación</li>
+                <li><strong>docs/Azure.md</strong> — Propuesta de arquitectura cloud en Azure</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+@code {
+    private ApiSettings CurrentSettings => ApiSettingsMonitor.CurrentValue;
+}

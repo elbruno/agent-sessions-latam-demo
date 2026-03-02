@@ -1,0 +1,205 @@
+@page "/sismos"
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.SignalR.Client
+@using BalizasV16.Models
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+
+<PageTitle>🔴 Sismos en Tiempo Real — México</PageTitle>
+
+<div class="eq-layout">
+    <!-- Left: Controls + Map -->
+    <div class="eq-main">
+        <div class="eq-header">
+            <h1>🔴 Sismos en Tiempo Real</h1>
+            <span class="eq-subtitle">Datos de USGS + SSN México</span>
+        </div>
+
+        <div class="eq-controls">
+            <div class="eq-filter">
+                <label>🎯 Magnitud mín:</label>
+                <select @onchange="OnMinMagChanged">
+                    <option value="0">Todos</option>
+                    <option value="2.5">≥ 2.5</option>
+                    <option value="4.0" selected>≥ 4.0</option>
+                    <option value="5.0">≥ 5.0</option>
+                    <option value="6.0">≥ 6.0</option>
+                    <option value="7.0">≥ 7.0</option>
+                </select>
+            </div>
+
+            <div class="eq-filter">
+                <label>⏰ Período:</label>
+                <select @onchange="OnTimeRangeChanged">
+                    <option value="hour">Última hora</option>
+                    <option value="day">Últimas 24h</option>
+                    <option value="3days">Últimos 3 días</option>
+                    <option value="week" selected>Última semana</option>
+                </select>
+            </div>
+
+            <div class="eq-filter">
+                <label>
+                    <input type="checkbox" checked="@_mexicoOnly" @onchange="OnMexicoOnlyChanged" />
+                    🇲🇽 Solo México
+                </label>
+            </div>
+
+            <div class="eq-stats">
+                <span class="eq-badge">@_earthquakes.Count sismos</span>
+                @if (_earthquakes.Any(e => e.Magnitude >= 5))
+                {
+                    <span class="eq-badge eq-badge-alert">@_earthquakes.Count(e => e.Magnitude >= 5) fuertes (≥5.0)</span>
+                }
+                @if (_loading)
+                {
+                    <span class="eq-loading">⏳</span>
+                }
+            </div>
+        </div>
+
+        <!-- Legend -->
+        <div class="eq-legend">
+            <span><span class="eq-dot" style="background:#88cc00;width:10px;height:10px"></span> &lt;2.5</span>
+            <span><span class="eq-dot" style="background:#ffdd00;width:14px;height:14px"></span> 2.5-3.9</span>
+            <span><span class="eq-dot" style="background:#ffaa00;width:18px;height:18px"></span> 4.0-4.9</span>
+            <span><span class="eq-dot" style="background:#ff6600;width:22px;height:22px"></span> 5.0-6.9</span>
+            <span><span class="eq-dot" style="background:#ff0000;width:26px;height:26px"></span> ≥7.0</span>
+        </div>
+
+        <div id="earthquakeMap" style="height:calc(100vh - 260px);width:100%;border-radius:8px;"></div>
+    </div>
+
+    <!-- Right: Detail Panel -->
+    <div class="eq-panel">
+        <h3>📋 Últimos Sismos</h3>
+
+        @if (_selectedQuake != null)
+        {
+            <div class="eq-detail-card" style="border-left:4px solid @_selectedQuake.SeverityColor">
+                <h4 style="color:@_selectedQuake.SeverityColor">M @_selectedQuake.Magnitude.ToString("F1")</h4>
+                <p><strong>📍</strong> @_selectedQuake.Place</p>
+                <p><strong>⏰</strong> @_selectedQuake.Time.ToString("dd/MM/yyyy HH:mm:ss") UTC</p>
+                <p><strong>📏</strong> Profundidad: @_selectedQuake.Depth.ToString("F1") km</p>
+                @if (_selectedQuake.Felt.HasValue)
+                {
+                    <p><strong>👥</strong> Sentido por @_selectedQuake.Felt personas</p>
+                }
+                @if (_selectedQuake.Tsunami > 0)
+                {
+                    <p class="eq-tsunami">🌊 ¡Alerta de tsunami!</p>
+                }
+                @if (!string.IsNullOrEmpty(_selectedQuake.Url))
+                {
+                    <a href="@_selectedQuake.Url" target="_blank" class="eq-link">🔗 Ver en USGS</a>
+                }
+            </div>
+        }
+
+        <div class="eq-list">
+            @foreach (var quake in _earthquakes.Take(50))
+            {
+                <div class="eq-list-item @(quake == _selectedQuake ? "selected" : "")"
+                     @onclick="() => SelectQuake(quake)"
+                     style="border-left:3px solid @quake.SeverityColor">
+                    <span class="eq-list-mag" style="color:@quake.SeverityColor">@quake.Magnitude.ToString("F1")</span>
+                    <div class="eq-list-info">
+                        <span class="eq-list-place">@quake.Place</span>
+                        <span class="eq-list-time">@quake.Time.ToString("dd/MM HH:mm") UTC</span>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<Earthquake> _earthquakes = new();
+    private Earthquake? _selectedQuake;
+    private double _minMag = 4.0;
+    private string _timeRange = "week";
+    private bool _mexicoOnly = true;
+    private bool _loading = true;
+    private HubConnection? _hubConnection;
+    private DotNetObjectReference<Sismos>? _dotNetRef;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _dotNetRef = DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("earthquakeMap.init");
+
+            _hubConnection = new HubConnectionBuilder()
+                .WithUrl(Navigation.ToAbsoluteUri("/earthquakehub"))
+                .WithAutomaticReconnect()
+                .Build();
+
+            _hubConnection.On<List<Earthquake>>("EarthquakesUpdated", async (quakes) =>
+            {
+                _earthquakes = quakes;
+                _selectedQuake = quakes.FirstOrDefault();
+                await JS.InvokeVoidAsync("earthquakeMap.updateMarkers", quakes, _dotNetRef);
+                _loading = false;
+                await InvokeAsync(StateHasChanged);
+            });
+
+            await _hubConnection.StartAsync();
+            await _hubConnection.InvokeAsync("RequestEarthquakes", _minMag, _timeRange, _mexicoOnly);
+        }
+    }
+
+    [JSInvokable]
+    public void SelectEarthquake(int index)
+    {
+        if (index >= 0 && index < _earthquakes.Count)
+        {
+            _selectedQuake = _earthquakes[index];
+            InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task SelectQuake(Earthquake quake)
+    {
+        _selectedQuake = quake;
+        await JS.InvokeVoidAsync("earthquakeMap.focusQuake", quake.Lat, quake.Lon, quake.Magnitude);
+    }
+
+    private async Task OnMinMagChanged(ChangeEventArgs e)
+    {
+        if (double.TryParse(e.Value?.ToString(), System.Globalization.NumberStyles.Float,
+            System.Globalization.CultureInfo.InvariantCulture, out var mag))
+        {
+            _minMag = mag;
+            await ApplyFilters();
+        }
+    }
+
+    private async Task OnTimeRangeChanged(ChangeEventArgs e)
+    {
+        _timeRange = e.Value?.ToString() ?? "week";
+        await ApplyFilters();
+    }
+
+    private async Task OnMexicoOnlyChanged(ChangeEventArgs e)
+    {
+        _mexicoOnly = (bool)(e.Value ?? false);
+        await ApplyFilters();
+    }
+
+    private async Task ApplyFilters()
+    {
+        _loading = true;
+        if (_hubConnection is not null)
+            await _hubConnection.InvokeAsync("RequestEarthquakes", _minMag, _timeRange, _mexicoOnly);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        _dotNetRef?.Dispose();
+        if (_hubConnection is not null)
+            await _hubConnection.DisposeAsync();
+        try { await JS.InvokeVoidAsync("earthquakeMap.dispose"); } catch { }
+    }
+}
