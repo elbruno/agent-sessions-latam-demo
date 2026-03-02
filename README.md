@@ -127,6 +127,7 @@ Algunos proveedores de datos requieren API keys. Configúralas en `appsettings.j
 
 - 📺 [VS Code Live: Agent Sessions Day LATAM](https://www.youtube.com/watch?v=QVM4PrL44as)
 - 🤖 [Awesome GitHub Copilot](https://github.com/github/awesome-copilot/) — Colección curada de recursos, herramientas y ejemplos de GitHub Copilot
+- 🐿️ [Squad](https://github.com/bradygaster/squad) — Framework de agentes multi-rol para GitHub Copilot
 - 📖 [Documentación de GitHub Copilot](https://docs.github.com/en/copilot)
 - 🟣 [.NET 10](https://dotnet.microsoft.com/download/dotnet/10.0)
 
