@@ -1,48 +1,48 @@
 # 🗺️ Agent Sessions LATAM Demo — Mapas en Tiempo Real
 
-> Demo project for [**VS Code Live: Agent Sessions Day LATAM**](https://www.youtube.com/watch?v=QVM4PrL44as) — showcasing how GitHub Copilot agent mode can build a full-stack real-time geospatial application from scratch.
+> Proyecto demo para [**VS Code Live: Agent Sessions Day LATAM**](https://www.youtube.com/watch?v=QVM4PrL44as) — demostrando cómo GitHub Copilot en modo agente puede construir una aplicación geoespacial en tiempo real desde cero.
 
 ![.NET 10](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet)
 ![Blazor Server](https://img.shields.io/badge/Blazor-Server-512BD4?logo=blazor)
 ![SignalR](https://img.shields.io/badge/SignalR-Realtime-blue)
 ![Leaflet](https://img.shields.io/badge/Leaflet-Maps-199900?logo=leaflet)
 
-## 🎬 About the Event
+## 🎬 Sobre el Evento
 
-**VS Code Live: Agent Sessions Day LATAM** is a community event focused on demonstrating the power of AI-assisted development using **GitHub Copilot Agent Mode** in Visual Studio Code. This repository was built live during the session to showcase how agent sessions can accelerate the creation of complex, real-world applications.
+**VS Code Live: Agent Sessions Day LATAM** es un evento comunitario enfocado en demostrar el poder del desarrollo asistido por IA usando **GitHub Copilot en Modo Agente** en Visual Studio Code. Este repositorio fue construido en vivo durante la sesión para mostrar cómo las sesiones de agente pueden acelerar la creación de aplicaciones complejas del mundo real.
 
-📺 **Watch the session:** [https://www.youtube.com/watch?v=QVM4PrL44as](https://www.youtube.com/watch?v=QVM4PrL44as)
+📺 **Ver la sesión:** [https://www.youtube.com/watch?v=QVM4PrL44as](https://www.youtube.com/watch?v=QVM4PrL44as)
 
-## ✨ Features
+## ✨ Características
 
-This application includes **four real-time interactive maps**, each powered by live data sources:
+Esta aplicación incluye **cuatro mapas interactivos en tiempo real**, cada uno alimentado por fuentes de datos en vivo:
 
 ### ⚠️ Balizas V16 — España
-- Real-time display of **V16 emergency beacons** on Spanish roads
-- Data sourced from **DGT DATEX II** API (Spain's traffic authority)
-- Auto-refreshes every 2 minutes via background polling
-- Interactive Leaflet map with beacon details
+- Visualización en tiempo real de **balizas de emergencia V16** en carreteras españolas
+- Datos obtenidos de la API **DGT DATEX II** (Dirección General de Tráfico de España)
+- Actualización automática cada 2 minutos mediante polling en segundo plano
+- Mapa interactivo con Leaflet y detalles de cada baliza
 
 ### 🌮 Tacos Nocturnos — México
-- Find **taco stands open after 11 PM** in Mexico
-- **Multi-provider search** combining results from:
-  - 🗺️ OpenStreetMap (Overpass API) — always active, no key required
+- Encuentra **puestos de tacos abiertos después de las 11 PM** en México
+- **Búsqueda multi-proveedor** combinando resultados de:
+  - 🗺️ OpenStreetMap (Overpass API) — siempre activo, no requiere API key
   - 🔴 Yelp Fusion API
   - 🔵 Google Places API
   - 🟣 Foursquare Places API
-- Results are merged and deduplicated by geographic proximity
+- Los resultados se fusionan y deduplicarán por proximidad geográfica
 
 ### 🔴 Sismos — México
-- **Real-time earthquake monitoring** for Mexico
-- Data from **USGS** and **SSN** (Servicio Sismológico Nacional)
-- Live updates via SignalR
+- **Monitoreo sísmico en tiempo real** para México
+- Datos de **USGS** y **SSN** (Servicio Sismológico Nacional)
+- Actualizaciones en vivo vía SignalR
 
 ### 🌋 Popocatépetl — Monitor Volcánico
-- **Real-time volcanic activity** monitoring for Popocatépetl
-- Data from **CENAPRED** (Centro Nacional de Prevención de Desastres)
-- Live alerts and status updates
+- **Monitoreo de actividad volcánica en tiempo real** del Popocatépetl
+- Datos de **CENAPRED** (Centro Nacional de Prevención de Desastres)
+- Alertas y actualizaciones de estado en vivo
 
-## 🏗️ Architecture
+## 🏗️ Arquitectura
 
 ```
 ┌─────────────────────────────────────────────────┐
@@ -51,13 +51,13 @@ This application includes **four real-time interactive maps**, each powered by l
 │  Map.razor  │ Tacos.razor │ Sismos   │ Volcán   │
 │  (Balizas)  │ (Tacos)     │          │          │
 ├─────────────┴─────────────┴──────────┴──────────┤
-│              SignalR Hubs (Real-time)            │
+│            SignalR Hubs (Tiempo real)            │
 │  BalizaHub · TacoHub · EarthquakeHub · VolcanoHub│
 ├─────────────────────────────────────────────────┤
-│           Background Services (Polling)          │
+│        Servicios en Segundo Plano (Polling)      │
 │  BalizaService · EarthquakeService · VolcanoService│
 ├─────────────────────────────────────────────────┤
-│              External APIs                       │
+│                APIs Externas                     │
 │  DGT · Overpass · Yelp · Google · Foursquare    │
 │  USGS · SSN · CENAPRED                          │
 └─────────────────────────────────────────────────┘
@@ -65,72 +65,79 @@ This application includes **four real-time interactive maps**, each powered by l
 └─────────────────────────────────────────────────┘
 ```
 
-## 🚀 Getting Started
+## 🚀 Cómo Empezar
 
-### Prerequisites
+### Prerrequisitos
 
 - [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
 
-### Run the application
+### Ejecutar la aplicación
 
 ```bash
 dotnet run
 ```
 
-The app will be available at `https://localhost:5001` (or the port configured in your launch settings).
+La aplicación estará disponible en `https://localhost:5001` (o el puerto configurado en tus launch settings).
 
-### API Keys (Optional)
+### API Keys (Opcional)
 
-Some data providers require API keys. Configure them in `appsettings.json`:
+Algunos proveedores de datos requieren API keys. Configúralas en `appsettings.json`:
 
 ```json
 {
   "ApiKeys": {
-    "Yelp": "your-yelp-api-key",
-    "GooglePlaces": "your-google-places-api-key",
-    "Foursquare": "your-foursquare-api-key"
+    "Yelp": "tu-api-key-de-yelp",
+    "GooglePlaces": "tu-api-key-de-google-places",
+    "Foursquare": "tu-api-key-de-foursquare"
   }
 }
 ```
 
-> **Note:** The Overpass/OpenStreetMap provider works without any API key. Balizas V16 (DGT), earthquakes (USGS/SSN), and volcano data (CENAPRED) are also free and require no keys.
+> **Nota:** El proveedor Overpass/OpenStreetMap funciona sin API key. Balizas V16 (DGT), sismos (USGS/SSN) y datos volcánicos (CENAPRED) también son gratuitos y no requieren claves.
 
-## 🛠️ Tech Stack
+## 🛠️ Stack Tecnológico
 
-| Component | Technology |
-|-----------|-----------|
+| Componente | Tecnología |
+|------------|------------|
 | **Framework** | .NET 10 — Blazor Server |
-| **Maps** | Leaflet.js 1.9.4 + OpenStreetMap tiles |
-| **Real-time** | SignalR (integrated with Blazor Server) |
-| **Data APIs** | DGT DATEX II, Overpass, Yelp, Google Places, Foursquare, USGS, SSN, CENAPRED |
+| **Mapas** | Leaflet.js 1.9.4 + OpenStreetMap tiles |
+| **Tiempo real** | SignalR (integrado con Blazor Server) |
+| **APIs de datos** | DGT DATEX II, Overpass, Yelp, Google Places, Foursquare, USGS, SSN, CENAPRED |
 
-## 📂 Project Structure
+## 📂 Estructura del Proyecto
 
 ```
 ├── Components/
 │   ├── Layout/              # MainLayout, NavMenu
 │   └── Pages/
-│       ├── Home.razor       # Landing page
-│       ├── Map.razor        # Balizas V16 map (Spain)
-│       ├── Tacos.razor      # Tacos Nocturnos map (Mexico)
-│       ├── Sismos.razor     # Earthquake monitor (Mexico)
-│       ├── Popocatepetl.razor # Volcano monitor
-│       └── Settings.razor   # API key configuration
-├── Models/                  # Data models (Baliza, TacoStand, Earthquake, VolcanoData)
-├── Services/                # Background services + SignalR hubs
-├── docs/                    # Detailed API & architecture documentation
-├── wwwroot/                 # Static assets (JS, CSS)
-└── Program.cs               # App configuration & service registration
+│       ├── Home.razor       # Página principal
+│       ├── Map.razor        # Mapa de Balizas V16 (España)
+│       ├── Tacos.razor      # Mapa de Tacos Nocturnos (México)
+│       ├── Sismos.razor     # Monitor de sismos (México)
+│       ├── Popocatepetl.razor # Monitor volcánico
+│       └── Settings.razor   # Configuración de API keys
+├── Models/                  # Modelos de datos (Baliza, TacoStand, Earthquake, VolcanoData)
+├── Services/                # Servicios en segundo plano + hubs SignalR
+├── docs/                    # Documentación detallada de APIs y arquitectura
+├── wwwroot/                 # Archivos estáticos (JS, CSS)
+└── Program.cs               # Configuración de la app y registro de servicios
 ```
 
-## 📄 License
+## 🔗 Recursos
 
-This project is provided as a demo for educational purposes.
+- 📺 [VS Code Live: Agent Sessions Day LATAM](https://www.youtube.com/watch?v=QVM4PrL44as)
+- 🤖 [Awesome GitHub Copilot](https://github.com/github/awesome-copilot/) — Colección curada de recursos, herramientas y ejemplos de GitHub Copilot
+- 📖 [Documentación de GitHub Copilot](https://docs.github.com/en/copilot)
+- 🟣 [.NET 10](https://dotnet.microsoft.com/download/dotnet/10.0)
 
-## 🙏 Credits
+## 📄 Licencia
 
-Built with ❤️ using **GitHub Copilot Agent Mode** during [VS Code Live: Agent Sessions Day LATAM](https://www.youtube.com/watch?v=QVM4PrL44as).
+Este proyecto se proporciona como demo con fines educativos.
+
+## 🙏 Créditos
+
+Construido con ❤️ usando **GitHub Copilot en Modo Agente** durante [VS Code Live: Agent Sessions Day LATAM](https://www.youtube.com/watch?v=QVM4PrL44as).
 
 ---
 
-> *"The best way to learn AI-assisted development is to build something real."*
+> *"La mejor manera de aprender desarrollo asistido por IA es construir algo real."*
